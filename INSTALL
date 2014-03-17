@@ -1,0 +1,9 @@
+Building Genesiscoin
+
+See doc/readme-qt.rst for instructions on building Genesiscoin-Qt,
+the intended-for-end-users, nice-graphical-interface, reference
+implementation of Genesiscoin.
+
+See doc/build-*.txt for instructions on building genesiscoind,
+the intended-for-services, no-graphical-interface, reference
+implementation of Genesiscoin.
