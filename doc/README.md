@@ -1,4 +1,4 @@
-Genesiscoin 0.8.x BETA
+Genesiscoin 1.0.0 BETA
 ====================
 
 Copyright (c) 2009-2013 Bitcoin Developers
