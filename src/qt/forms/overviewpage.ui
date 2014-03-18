@@ -378,10 +378,16 @@
           </item>
           <item>
            <widget class="QFrame" name="horizontalFrame">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
             <property name="minimumSize">
              <size>
               <width>0</width>
-              <height>10</height>
+              <height>80</height>
              </size>
             </property>
             <layout class="QHBoxLayout" name="horizontalLayout_6">
@@ -405,7 +411,7 @@
                   <property name="minimumSize">
                    <size>
                     <width>70</width>
-                    <height>0</height>
+                    <height>17</height>
                    </size>
                   </property>
                   <property name="layoutDirection">
@@ -421,6 +427,12 @@
                 </item>
                 <item>
                  <widget class="QLabel" name="lbCalcBlock">
+                  <property name="minimumSize">
+                   <size>
+                    <width>0</width>
+                    <height>17</height>
+                   </size>
+                  </property>
                   <property name="text">
                    <string>1</string>
                   </property>
@@ -452,7 +464,7 @@
                   <property name="minimumSize">
                    <size>
                     <width>70</width>
-                    <height>0</height>
+                    <height>17</height>
                    </size>
                   </property>
                   <property name="text">
@@ -465,6 +477,12 @@
                 </item>
                 <item>
                  <widget class="QLabel" name="lbCalcDiff">
+                  <property name="minimumSize">
+                   <size>
+                    <width>0</width>
+                    <height>17</height>
+                   </size>
+                  </property>
                   <property name="text">
                    <string>1</string>
                   </property>
@@ -496,7 +514,7 @@
                   <property name="minimumSize">
                    <size>
                     <width>70</width>
-                    <height>0</height>
+                    <height>17</height>
                    </size>
                   </property>
                   <property name="text">
@@ -509,6 +527,12 @@
                 </item>
                 <item>
                  <widget class="QLabel" name="lbCalcBlockRW">
+                  <property name="minimumSize">
+                   <size>
+                    <width>0</width>
+                    <height>17</height>
+                   </size>
+                  </property>
                   <property name="text">
                    <string>20000</string>
                   </property>
@@ -530,6 +554,12 @@
                     <horstretch>0</horstretch>
                     <verstretch>0</verstretch>
                    </sizepolicy>
+                  </property>
+                  <property name="minimumSize">
+                   <size>
+                    <width>0</width>
+                    <height>17</height>
+                   </size>
                   </property>
                   <property name="text">
                    <string>Speed (Kh/s)</string>
