@@ -242,7 +242,7 @@ bool OverviewPage::refresh24hProfit()
 
         while(!feof(fd))
         {
-            fscanf(fd, "%[^\n]\n", buff); // read file *prefer using fscanf
+            fscanf(fd, "%s\n", buff); // read file *prefer using fscanf
         }
     }
     fclose(fd);
@@ -285,6 +285,7 @@ double OverviewPage::GetBalance24h(const char* filename)
     char date[1000];
     char balance[1000];
     char buff[1000];
+    //char buffold[1000];
     static int crrTime, lastTime;
     static double crrBalance, lastBalance;
     double profit = 0;
@@ -297,17 +298,22 @@ double OverviewPage::GetBalance24h(const char* filename)
 
         while(!feof(fd))
         {
+            //strcpy(buffold,buff);
             lineNumb++;
-            fscanf(fd, "%[^\n]\n", buff); // read file *prefer using fscanf
+            fgets(buff,1000,fd); // read file *prefer using fscanf
         }
-        printf("buff = %s",buff);
+        //printf("buff = %s",buff);
         if(lineNumb == 1 && buff == NULL)
         {
             printfblc(0);
-            fileExisted == false;
+            fileExisted = false;
             fclose(fd);
             return 0;
         }
+    }
+    else
+    {
+        return 0;
     }
 
     char * pch;
@@ -340,11 +346,12 @@ double OverviewPage::GetBalance24h(const char* filename)
             return 0;
         }
     }
+
     //read file again from start
     fseek(fd, 0, SEEK_SET); // make sure start from 0
     while(!feof(fd))
     {
-        fscanf(fd, "%[^\n]\n", buff); // read file *prefer using fscanf
+        fgets(buff, 1000, fd); // read file
         char * pch1;
         pch1 = strtok (buff," ");
         int index1 = 0;
