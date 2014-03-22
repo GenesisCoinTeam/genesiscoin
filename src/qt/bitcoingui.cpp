@@ -25,6 +25,7 @@
 #include "ui_interface.h"
 #include "wallet.h"
 #include "init.h"
+#include "chartpage.h"
 
 #ifdef Q_OS_MAC
 #include "macdockiconhandler.h"
@@ -201,6 +202,12 @@ void BitcoinGUI::createActions()
     addressBookAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_5));
     tabGroup->addAction(addressBookAction);
 
+    chartAction = new QAction(QIcon(":/icons/chart"), tr("&Chart"), this);
+    chartAction->setToolTip(tr("View chart"));
+    addressBookAction->setToolTip(addressBookAction->statusTip());
+    chartAction->setCheckable(true);
+    tabGroup->addAction(chartAction);
+
     connect(overviewAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
     connect(overviewAction, SIGNAL(triggered()), this, SLOT(gotoOverviewPage()));
     connect(sendCoinsAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
@@ -211,6 +218,8 @@ void BitcoinGUI::createActions()
     connect(historyAction, SIGNAL(triggered()), this, SLOT(gotoHistoryPage()));
     connect(addressBookAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
     connect(addressBookAction, SIGNAL(triggered()), this, SLOT(gotoAddressBookPage()));
+    connect(chartAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
+    connect(chartAction, SIGNAL(triggered()), this, SLOT(gotoChartPage()));
 
     quitAction = new QAction(QIcon(":/icons/quit"), tr("E&xit"), this);
     quitAction->setStatusTip(tr("Quit application"));
@@ -295,6 +304,7 @@ void BitcoinGUI::createToolBars()
     toolbar->addAction(receiveCoinsAction);
     toolbar->addAction(historyAction);
     toolbar->addAction(addressBookAction);
+    toolbar->addAction(chartAction);
 }
 
 void BitcoinGUI::setClientModel(ClientModel *clientModel)
@@ -371,6 +381,7 @@ void BitcoinGUI::setWalletActionsEnabled(bool enabled)
     signMessageAction->setEnabled(enabled);
     verifyMessageAction->setEnabled(enabled);
     addressBookAction->setEnabled(enabled);
+    chartAction->setEnabled(enabled);
 }
 
 void BitcoinGUI::createTrayIcon()
@@ -495,6 +506,11 @@ void BitcoinGUI::gotoReceiveCoinsPage()
 void BitcoinGUI::gotoSendCoinsPage(QString addr)
 {
     if (walletFrame) walletFrame->gotoSendCoinsPage(addr);
+}
+
+void BitcoinGUI::gotoChartPage()
+{
+    if (walletFrame) walletFrame->gotoChartPage();
 }
 
 void BitcoinGUI::gotoSignMessageTab(QString addr)

@@ -17,6 +17,7 @@
 #include "overviewpage.h"
 #include "askpassphrasedialog.h"
 #include "ui_interface.h"
+#include "chartpage.h"
 
 #include <QHBoxLayout>
 #include <QVBoxLayout>
@@ -37,7 +38,7 @@ WalletView::WalletView(QWidget *parent, BitcoinGUI *_gui):
 {
     // Create tabs
     overviewPage = new OverviewPage();
-
+    chartPage = new ChartPage();
     transactionsPage = new QWidget(this);
     QVBoxLayout *vbox = new QVBoxLayout();
     QHBoxLayout *hbox_buttons = new QHBoxLayout();
@@ -62,6 +63,7 @@ WalletView::WalletView(QWidget *parent, BitcoinGUI *_gui):
     signVerifyMessageDialog = new SignVerifyMessageDialog(gui);
 
     addWidget(overviewPage);
+    addWidget(chartPage);
     addWidget(transactionsPage);
     addWidget(addressBookPage);
     addWidget(receiveCoinsPage);
@@ -155,6 +157,14 @@ void WalletView::gotoOverviewPage()
     gui->getOverviewAction()->setChecked(true);
     setCurrentWidget(overviewPage);
 }
+
+void WalletView::gotoChartPage()
+{
+    gui->getChartAction()->setChecked(true);
+    setCurrentWidget(chartPage);
+    chartPage->DrawChart();
+}
+
 
 void WalletView::gotoHistoryPage()
 {

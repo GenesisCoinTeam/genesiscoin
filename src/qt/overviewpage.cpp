@@ -242,7 +242,7 @@ bool OverviewPage::refresh24hProfit()
 
         while(!feof(fd))
         {
-            fscanf(fd, "%s\n", buff); // read file *prefer using fscanf
+            fgets(buff,1000,fd); // read file
         }
     }
     fclose(fd);
@@ -250,7 +250,7 @@ bool OverviewPage::refresh24hProfit()
     remove(filename);
 
     if ((fd = fopen(filename, "w")) != NULL) // open file
-        fprintf(fd, "%s\n", buff);
+        fprintf(fd, "%s", buff);
     fclose(fd);
     return true;
 }
@@ -264,7 +264,7 @@ double OverviewPage::calcProfit(double blockReward,double diff,double hash)
 void OverviewPage::on_btnc24hProfits_clicked()
 {
     QMessageBox::StandardButton reply;
-    reply = QMessageBox::question(this, "Confirm!!!", "Do you want to clear 24h profits data?",
+    reply = QMessageBox::question(this, "Confirm!!!", "Do you want to clear profits data?",
                                 QMessageBox::Yes|QMessageBox::No);
     if (reply == QMessageBox::Yes)
         refresh24hProfit();
