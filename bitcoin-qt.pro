@@ -241,7 +241,9 @@ HEADERS += src/qt/bitcoingui.h \
     src/limitedmap.h \
     src/qt/macnotificationhandler.h \
     src/qt/splashscreen.h \
-    src/qt/chartpage.h
+    src/qt/chartpage.h \
+    src/downloadmanager.h \
+    src/generatexml.h
 
 SOURCES += src/qt/bitcoin.cpp \
     src/qt/bitcoingui.cpp \
@@ -313,7 +315,9 @@ SOURCES += src/qt/bitcoin.cpp \
     src/leveldb.cpp \
     src/txdb.cpp \
     src/qt/splashscreen.cpp \
-    src/qt/chartpage.cpp
+    src/qt/chartpage.cpp \
+    src/downloadmanager.cpp \
+    src/generatexml.cpp
 
 RESOURCES += src/qt/bitcoin.qrc
 
