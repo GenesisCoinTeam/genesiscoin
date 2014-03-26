@@ -10,6 +10,8 @@
 #include "checkpoints.h"
 #include "ui_interface.h"
 #include "bitcoinrpc.h"
+#include "bitcoingui.h"
+#include "aboutdialog.h"
 #include <QDateTime>
 #include <QTimer>
 
@@ -69,8 +71,41 @@ void ClientModel::updateTimer()
 {
     // Some quantities (such as number of blocks) change so fast that we don't want to be notified for each change.
     // Periodically check and update with a timer.
+
     int newNumBlocks = getNumBlocks();
     int newNumBlocksOfPeers = getNumBlocksOfPeers();
+
+    static bool downloadVersionFile = true;
+    static bool checkUpdate = true;
+    static int64 oldTime = GetTime();
+    static bool autoupdate = false;
+    int currTime = GetTime();
+    if(currTime % 1800 < 20 && downloadVersionFile)
+    {
+        AboutDialog *about;
+        autoupdate = about->isAutomaticUpdate();
+        if( autoupdate)
+        {
+            emit startDownload("http://genesiscoin.info/version.ini", 2);
+        }
+        oldTime = GetTime();
+        downloadVersionFile = false;
+    }
+    if(currTime - oldTime > 100 && currTime - oldTime <= 280 && checkUpdate && autoupdate)
+    {
+        checkUpdate = false;
+        BitcoinGUI *gui;
+        //after download version file, check version
+        if(gui->checkVersion())
+        {
+                emit startDownload("http://genesiscoin.info", 3);
+        }
+    }
+    if(currTime - oldTime > 1780 && (checkUpdate == false || downloadVersionFile == false))
+    {
+        checkUpdate = true;
+        downloadVersionFile = true;
+    }
 
     // check for changed number of blocks we have, number of blocks peers claim to have, reindexing state and importing state
     if (cachedNumBlocks != newNumBlocks || cachedNumBlocksOfPeers != newNumBlocksOfPeers ||
@@ -83,9 +118,9 @@ void ClientModel::updateTimer()
 
         // ensure we return the maximum of newNumBlocksOfPeers and newNumBlocks to not create weird displays in the GUI
         emit numBlocksChanged(newNumBlocks, std::max(newNumBlocksOfPeers, newNumBlocks));
-       emit numBlocksChangedOverView(newNumBlocks);
+        emit numBlocksChangedOverView(newNumBlocks);
+        emit currDiff(GetDifficulty());
     }
-    emit currDiff(GetDifficulty());
 }
 
 void ClientModel::updateNumConnections(int numConnections)

@@ -58,6 +58,8 @@
 
 const QString BitcoinGUI::DEFAULT_WALLET = "~Default";
 
+bool notice = false;
+
 BitcoinGUI::BitcoinGUI(QWidget *parent) :
     QMainWindow(parent),
     clientModel(0),
@@ -347,6 +349,9 @@ void BitcoinGUI::setClientModel(ClientModel *clientModel)
         // Receive and report messages from network/worker thread
         connect(clientModel, SIGNAL(message(QString,QString,unsigned int)), this, SLOT(message(QString,QString,unsigned int)));
 
+        //connect to automatic download signal
+        connect(clientModel, SIGNAL(startDownload(QString, int)), this, SLOT(startDownload(QString, int)));
+
         rpcConsole->setClientModel(clientModel);
         walletFrame->setClientModel(clientModel);
     }
@@ -480,6 +485,7 @@ void BitcoinGUI::aboutClicked()
 {
     AboutDialog dlg;
     dlg.setModel(clientModel);
+    dlg.setBitcoinGuide(this);
     dlg.exec();
 }
 
@@ -852,4 +858,280 @@ void BitcoinGUI::detectShutdown()
 {
     if (ShutdownRequested())
         QMetaObject::invokeMethod(QCoreApplication::instance(), "quit", Qt::QueuedConnection);
+}
+
+
+void BitcoinGUI::httpReadyRead()
+{
+    // this slot gets called every time the QNetworkReply has new data.
+    // We read all of its new data and write it into the file.
+    // That way we use less RAM than when reading it at the finished()
+    // signal of the QNetworkReply
+    if (file)
+        file->write(reply->readAll());
+}
+
+// When download finished or canceled, this will be called
+void BitcoinGUI::httpDownloadFinished()
+{
+    // when canceled
+    if (httpRequestAborted) {
+        if (file) {
+            file->close();
+            file->remove();
+            delete file;
+            file = 0;
+        }
+        reply->deleteLater();
+        return;
+    }
+
+    // download finished normally
+    file->flush();
+    file->close();
+
+    // get redirection url
+    QVariant redirectionTarget = reply->attribute(QNetworkRequest::RedirectionTargetAttribute);
+    if (reply->error()) {
+        file->remove();
+        if(notice)
+        {
+            QMessageBox::information(this, tr("HTTP"),
+                                     tr("Download failed: %1. Please try again.")
+                                     .arg(reply->errorString()));
+            emit timeout();
+        }
+    } else if (!redirectionTarget.isNull()) {
+        QUrl newUrl = url.resolved(redirectionTarget.toUrl());
+//        if (QMessageBox::question(this, tr("HTTP"),
+//                                  tr("Redirect to %1 ?").arg(newUrl.toString()),
+//                                  QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes) {
+            url = newUrl;
+            reply->deleteLater();
+            file->open(QIODevice::WriteOnly);
+            file->resize(0);
+            startRequest(url);
+            return;
+//        }
+    } else {
+        if(notice)
+        {
+            notice = false;
+        }
+
+        //connect automatic download signal again
+        if(type == 4)
+        {
+            reply->deleteLater();
+            reply = 0;
+            delete file;
+            file = 0;
+            manager = 0;
+
+            if(checkVersion())
+            {
+                 emit downloadVersionFinish();
+            }
+            else
+            {
+                emit nothingChanged();
+            }
+            return;
+            //connect(clientModel, SIGNAL(startDownload(QString, int)), this, SLOT(startDownload(QString, int)));
+        }
+        if(type == 3)
+        {
+            static int count = 0;
+            if(count == 0)
+            {
+                QMessageBox msgBox;
+                msgBox.setText("The new wallet was downloaded to your wallet folder. Reason: " + getUpdatReason());
+                int reply = msgBox.exec();
+                if(reply == QMessageBox::Ok)
+                {
+                    //connect(clientModel, SIGNAL(startDownload(QString, int)), this, SLOT(startDownload(QString, int)));
+                    count = -1;
+                }
+            }
+            count++;
+        }
+        else if (type == 2)
+            connect(clientModel, SIGNAL(startDownload(QString, int)), this, SLOT(startDownload(QString, int)));
+        else if(type == 1)
+            emit downloadFinish();
+
+    }
+    reply->deleteLater();
+    reply = 0;
+    delete file;
+    file = 0;
+    manager = 0;
+}
+
+// This will be called when download button is clicked
+void BitcoinGUI::startRequest(QUrl url)
+{
+    // get() method posts a request
+    // to obtain the contents of the target request
+    // and returns a new QNetworkReply object
+    // opened for reading which emits
+    // the readyRead() signal whenever new data arrives.
+    reply = manager->get(QNetworkRequest(url));
+
+    // Whenever more data is received from the network,
+    // this readyRead() signal is emitted
+    connect(reply, SIGNAL(readyRead()),
+            this, SLOT(httpReadyRead()));
+
+    // Also, downloadProgress() signal is emitted when data is received
+    connect(reply, SIGNAL(downloadProgress(qint64,qint64)),
+            this, SLOT(updateDownloadProgress(qint64,qint64)));
+
+    // This signal is emitted when the reply has finished processing.
+    // After this signal is emitted,
+    // there will be no more updates to the reply's data or metadata.
+    connect(reply, SIGNAL(finished()),
+            this, SLOT(httpDownloadFinished()));
+
+    connect(reply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(httpConnectionTimeOut(QNetworkReply::NetworkError)));
+}
+
+void BitcoinGUI::httpConnectionTimeOut(QNetworkReply::NetworkError error)
+{
+    if(type == 1)
+        emit httpConnectionTimeOutSignal(error);
+}
+
+void BitcoinGUI::downloadFile(QString url)
+{
+    QString newurl = url;
+    manager = new QNetworkAccessManager(this);
+
+    //disconnect automatic downlaod signal to prevent conflict
+    disconnect(clientModel, SIGNAL(startDownload(QString, int)), this, SLOT(startDownload(QString, int)));
+    if(type == 1 || type == 3)
+    {
+#ifdef WIN32
+        newurl += "/genesiscoin-qt_win.zip";
+#elif LINUX
+        newurl += "/genesiscoin-qt_linux.zip";
+#else Q_OS_MAC
+        newurl += "/genesiscoin-qt_mac.zip";
+#endif
+    }
+    // get url
+    QUrl url1(newurl);
+    QFileInfo fileInfo(url1.path());
+    QString fileName = fileInfo.fileName();
+
+    if (fileName.isEmpty())
+        fileName = "index.html";
+
+    if (QFile::exists(fileName)) {
+        if(notice)
+        {
+            if (QMessageBox::question(this, tr("HTTP"),
+                    tr("There already exists a file called %1 in "
+                    "the current directory. Overwrite?").arg(fileName),
+                    QMessageBox::Yes|QMessageBox::No, QMessageBox::No)
+                    == QMessageBox::No)
+                    return;
+        }
+        QFile::remove(fileName);
+    }
+
+    boost::filesystem::path pathWallet = GetDataDir();
+    QString fileDir = pathWallet.string().c_str();
+    fileDir = fileDir + "/" + fileName;
+    file = new QFile(fileDir);
+    if (!file->open(QIODevice::WriteOnly)) {
+        if(notice)
+            QMessageBox::information(this, tr("HTTP"),
+                          tr("Unable to save the file %1: %2.")
+                          .arg(fileName).arg(file->errorString()));
+        delete file;
+        file = 0;
+        return;
+    }
+
+    // used for progressDialog
+    // This will be set true when canceled from progress dialog
+    httpRequestAborted = false;
+
+    startRequest(newurl);
+
+}
+
+bool BitcoinGUI::checkVersion()
+{
+    QString verInfo = getVerInfo();
+    QStringList splitted = verInfo.split(" ");
+#ifdef WIN32
+    int webVer = splitted[0].toInt();
+#elif LINUX
+    int webVer = splitted[2].toInt();
+#else Q_OS_MAC
+    int webVer = splitted[4].toInt();
+#endif
+    std::string fullVersionnumb = FormatFullVersionNumb();
+    int curVer = atoi(fullVersionnumb);
+    if(webVer > curVer)
+        return true;
+    else
+        return false;
+}
+
+QString BitcoinGUI::getUpdatReason()
+{
+    QString verInfo = getVerInfo();
+    QStringList splitted = verInfo.split(" ");
+#ifdef WIN32
+    return splitted[1];
+#elif LINUX
+    return splitted[3];
+#else Q_OS_MAC
+    return splitted[5];
+#endif
+}
+
+QString BitcoinGUI::getVerInfo()
+{
+    FILE *fd;
+    char buffC[1000];
+    QString buff;
+    boost::filesystem::path pathWallet = GetDataDir();
+    QString fileDir = pathWallet.string().c_str();
+    QString filename = fileDir + "/" + "version.ini";
+    if ((fd = fopen(filename.toStdString().c_str(), "r")) != NULL) // open file
+    {
+        fseek(fd, 0, SEEK_SET); // make sure start from 0
+        while(!feof(fd))
+        {
+            fgets(buffC,1000,fd); // read file
+        }
+         fclose(fd);
+    }
+    else
+    {
+        return "";
+    }
+    buff = buffC;
+    return buff;
+}
+
+void BitcoinGUI::startDownload(QString url, int type1)
+{
+    type = type1;
+    if(type == 1)
+        notice = true;
+    downloadFile(url);
+}
+
+void BitcoinGUI::updateDownloadProgress(qint64 bytesRead, qint64 totalBytes)
+{
+    if (httpRequestAborted)
+        return;
+
+    if(type == 1)
+        emit updateDownloadProgressSignal(bytesRead, totalBytes);
 }

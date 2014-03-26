@@ -80,6 +80,7 @@ signals:
     //! Asynchronous message notification
     void message(const QString &title, const QString &message, unsigned int style);
 
+    void startDownload(QString url, int type);
 public slots:
     void updateTimer();
     void updateNumConnections(int numConnections);

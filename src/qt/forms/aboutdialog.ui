@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>593</width>
+    <width>600</width>
     <height>360</height>
    </rect>
   </property>
@@ -153,16 +153,23 @@ This product includes software developed by the OpenSSL Project for use in the O
          </spacer>
         </item>
         <item>
-         <widget class="QRadioButton" name="radioButton">
+         <widget class="QCheckBox" name="cbAutomatic">
           <property name="text">
-           <string>Auto update</string>
+           <string>Automatically install updates (Recommended)</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="pushButton">
+         <widget class="QPushButton" name="btnCheck">
           <property name="text">
            <string>Check</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="lblProcess">
+          <property name="text">
+           <string/>
           </property>
          </widget>
         </item>

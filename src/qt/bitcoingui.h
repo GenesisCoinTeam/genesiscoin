@@ -5,6 +5,17 @@
 #include <QSystemTrayIcon>
 #include <QMap>
 
+#include <QDir>
+#include <QNetworkAccessManager>
+#include <QNetworkRequest>
+#include <QNetworkReply>
+#include <QStringList>
+#include <QUrl>
+#include <QNetworkAccessManager>
+#include <QNetworkRequest>
+#include <QNetworkReply>
+#include <QMessageBox>
+
 class TransactionTableModel;
 class WalletFrame;
 class WalletView;
@@ -70,6 +81,12 @@ public:
     QAction * getSendCoinsAction() { return sendCoinsAction; }
     QAction * getChartAction() { return chartAction; }
 
+    void startRequest(QUrl url);
+    void downloadFile(QString url);
+    //if current is the newest version, return false, else return true
+    bool checkVersion();
+    QString getUpdatReason();
+    QString getVerInfo();
 protected:
     void changeEvent(QEvent *e);
     void closeEvent(QCloseEvent *event);
@@ -114,7 +131,7 @@ private:
     QMovie *syncIconMovie;
     /** Keep track of previous number of blocks, to detect progress */
     int prevBlocks;
-
+    int type = 0;
     /** Create the main UI actions. */
     void createActions();
     /** Create the menu bar and sub-menus. */
@@ -132,6 +149,12 @@ private:
     /** Enable or disable all wallet-related actions */
     void setWalletActionsEnabled(bool enabled);
 
+    QUrl url;
+    QNetworkAccessManager *manager;
+    QNetworkReply *reply;
+    QFile *file;
+    bool httpRequestAborted;
+    qint64 fileSize;
 public slots:
     /** Set number of connections shown in the UI */
     void setNumConnections(int count);
@@ -200,6 +223,27 @@ private slots:
 
     /** called by a timer to check if fRequestShutdown has been set **/
     void detectShutdown();
+
+    // slot for readyRead() signal
+    void httpReadyRead();
+
+    // slot for finished() signal from reply
+    void httpDownloadFinished();
+
+    // slot for connectionTimeOut() signal
+    void httpConnectionTimeOut(QNetworkReply::NetworkError error);
+
+    // slot for downloadProgress()
+    void updateDownloadProgress(qint64, qint64);
+
+    void startDownload(QString url, int type);
+signals:
+    void nothingChanged();
+    void timeout();
+    void updateDownloadProgressSignal(qint64 bytesRead, qint64 totalBytes);
+    void downloadFinish();
+    void downloadVersionFinish();
+    void httpConnectionTimeOutSignal(QNetworkReply::NetworkError error);
 };
 
 #endif // BITCOINGUI_H
