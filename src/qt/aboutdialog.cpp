@@ -65,6 +65,8 @@ void AboutDialog::on_buttonBox_accepted()
 
 void AboutDialog::on_btnCheck_clicked()
 {
+    ui->btnCheck->setEnabled(false);
+    ui->btnCheck->setText("Checking");
     emit startDownload("http://genesiscoin.info/version.ini", 4);
 }
 
@@ -151,6 +153,8 @@ void AboutDialog::nothingChanged()
     QMessageBox msgBox;
     msgBox.setText("You are using the newest version");
     msgBox.exec();
+    ui->btnCheck->setText("Check");
+    ui->btnCheck->setEnabled(true);
 }
 
 void AboutDialog::timeout()
