@@ -379,7 +379,15 @@ double OverviewPage::GetBalance24h(const char* filename)
 void OverviewPage::setNumBlocksOverview(int height)
 {
     ui->lbCalcBlock->setText(QString::number(height));
-    ui->lbCalcBlockRW->setText(QString::number(COINPERBLOCK * (100 - ( height / HEIGHDECREASE) * 5) / 100));
+    if(fTestNet)
+        ui->lbCalcBlockRW->setText(QString::number(COINPERBLOCK_2 * (100 - ( height/ 40 * 10)) / 100));
+    else
+    {
+        if(height <= 15000)
+            ui->lbCalcBlockRW->setText(QString::number(COINPERBLOCK * (100 - ( height / HEIGHDECREASE) * 5) / 100));
+        else
+            ui->lbCalcBlockRW->setText(QString::number(COINPERBLOCK_2 * (100 - ( (height - 15000)/ HEIGHDECREASE_2 * 10)) / 100));
+    }
 }
 
 void OverviewPage::setDiffOverview(double diff)

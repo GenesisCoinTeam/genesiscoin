@@ -1100,71 +1100,91 @@ int static generateMTRandom(unsigned int s, int range)
 
 int64 static GetBlockValue(int nHeight, int64 nFees, uint256 prevHash)
 {
-    int64 nSubsidy = COINPERBLOCK * COIN;
-    int64 nMin = COINPERBLOCK * 10 / 100 * COIN;
-    std::string cseed_str = prevHash.ToString().substr(7,7);
-    const char* cseed = cseed_str.c_str();
-    long seed = hex2long(cseed);
-    const double maxRand = 1440;
-    double rand = generateMTRandom(seed, maxRand);
-    printf("rand = %f\n",rand);
-    int goldFactor = 2 * maxRand / (60*24);  //0.138%
-    int silverFactor = 4 * maxRand / (60*24);   //0.27%
-    int bronzeFactor = 8 * maxRand / (60*24);  //0.55%
-
-    nSubsidy = nSubsidy * (100 - ( nHeight/ HEIGHDECREASE) * 5) / 100;
-
-    //printf("nHeight = %d\n", nHeight);
-    if(nHeight == 1)
-        return 300000000 * COIN + nFees;
-    else
+    if(fTestNet)
     {
-        if(rand < goldFactor)
-        {
-            if(nSubsidy < nMin)
-            {
-                return nMin * 10 + nFees;
-            }
-            else
-            {
-                return nSubsidy * 10 + nFees;
-            }
-        }
-        else if(rand >= goldFactor && rand < silverFactor + goldFactor)
-        {
-            if(nSubsidy < nMin)
-            {
-                return nMin * 6 + nFees;
-            }
-            else
-            {
-                return nSubsidy * 6 + nFees;
-            }
-        }
-        else if(rand >= silverFactor + goldFactor && rand < silverFactor + goldFactor + bronzeFactor)
-        {
-            if(nSubsidy < nMin)
-            {
-                return nMin * 3 + nFees;
-            }
-            else
-            {
-                return nSubsidy * 3 + nFees;
-            }
-        }
+        int64 nSubsidy = COINPERBLOCK_2 * COIN;
+        nSubsidy = nSubsidy * (100 - ( (nHeight + 1)/ 40) * 10) / 100;
+        if(nSubsidy < 0)
+            nSubsidy = 0;
+        return nSubsidy + nFees;
+    }
+    if(nHeight + 1 <= 15000)
+    {
+        int64 nSubsidy = COINPERBLOCK * COIN;
+        int64 nMin = COINPERBLOCK * 10 / 100 * COIN;
+        std::string cseed_str = prevHash.ToString().substr(7,7);
+        const char* cseed = cseed_str.c_str();
+        long seed = hex2long(cseed);
+        const double maxRand = 1440;
+        double rand = generateMTRandom(seed, maxRand);
+        printf("rand = %f\n",rand);
+        int goldFactor = 2 * maxRand / (60*24);  //0.138%
+        int silverFactor = 4 * maxRand / (60*24);   //0.27%
+        int bronzeFactor = 8 * maxRand / (60*24);  //0.55%
+
+        nSubsidy = nSubsidy * (100 - ( nHeight/ HEIGHDECREASE) * 5) / 100;
+
+        //printf("nHeight = %d\n", nHeight);
+        if(nHeight == 1)
+            return 300000000 * COIN + nFees;
         else
         {
-            if(nSubsidy < nMin)
+            if(rand < goldFactor)
             {
-                return nMin + nFees;
+                if(nSubsidy < nMin)
+                {
+                    return nMin * 10 + nFees;
+                }
+                else
+                {
+                    return nSubsidy * 10 + nFees;
+                }
+            }
+            else if(rand >= goldFactor && rand < silverFactor + goldFactor)
+            {
+                if(nSubsidy < nMin)
+                {
+                    return nMin * 6 + nFees;
+                }
+                else
+                {
+                    return nSubsidy * 6 + nFees;
+                }
+            }
+            else if(rand >= silverFactor + goldFactor && rand < silverFactor + goldFactor + bronzeFactor)
+            {
+                if(nSubsidy < nMin)
+                {
+                    return nMin * 3 + nFees;
+                }
+                else
+                {
+                    return nSubsidy * 3 + nFees;
+                }
             }
             else
             {
-                return nSubsidy + nFees;
+                if(nSubsidy < nMin)
+                {
+                    return nMin + nFees;
+                }
+                else
+                {
+                    return nSubsidy + nFees;
+                }
             }
         }
     }
-    return COIN;
+    else
+    {
+        int64 nSubsidy = COINPERBLOCK_2 * COIN;
+        nSubsidy = nSubsidy * (100 - ( (nHeight - 15000)/ HEIGHDECREASE_2) * 10) / 100;
+        if(nSubsidy < 0)
+            nSubsidy = 0;
+        return nSubsidy + nFees;
+
+    }
+    return nFees;
 }
 
 //
@@ -1316,8 +1336,80 @@ unsigned int static GetNextWorkRequired_legacy(const CBlockIndex* pindexLast, co
          return bnNew.GetCompact();
  }
  
- 
- 
+ unsigned int static DarkGravityWave(const CBlockIndex* pindexLast, const CBlockHeader *pblock) {
+     /* current difficulty formula, darkcoin - DarkGravity, written by Evan Duffield - evan@darkcoin.io */
+     const CBlockIndex *BlockLastSolved = pindexLast;
+     const CBlockIndex *BlockReading = pindexLast;
+     const CBlockHeader *BlockCreating = pblock;
+     BlockCreating = BlockCreating;
+     int64 nBlockTimeAverage = 0;
+     int64 nBlockTimeAveragePrev = 0;
+     int64 nBlockTimeCount = 0;
+     int64 nBlockTimeSum2 = 0;
+     int64 nBlockTimeCount2 = 0;
+     int64 LastBlockTime = 0;
+     int64 PastBlocksMin = 14;
+     int64 PastBlocksMax = 140;
+     int64 CountBlocks = 0;
+     CBigNum PastDifficultyAverage;
+     CBigNum PastDifficultyAveragePrev;
+
+     if (BlockLastSolved == NULL || BlockLastSolved->nHeight == 0 || BlockLastSolved->nHeight < PastBlocksMin) { return bnProofOfWorkLimit.GetCompact(); }
+
+     for (unsigned int i = 1; BlockReading && BlockReading->nHeight > 0; i++) {
+         if (PastBlocksMax > 0 && i > PastBlocksMax) { break; }
+         CountBlocks++;
+
+         if(CountBlocks <= PastBlocksMin) {
+             if (CountBlocks == 1) { PastDifficultyAverage.SetCompact(BlockReading->nBits); }
+             else { PastDifficultyAverage = ((CBigNum().SetCompact(BlockReading->nBits) - PastDifficultyAveragePrev) / CountBlocks) + PastDifficultyAveragePrev; }
+             PastDifficultyAveragePrev = PastDifficultyAverage;
+         }
+
+         if(LastBlockTime > 0){
+             int64 Diff = (LastBlockTime - BlockReading->GetBlockTime());
+             if(Diff < 0) Diff = 0;
+             if(nBlockTimeCount <= PastBlocksMin) {
+                 nBlockTimeCount++;
+
+                 if (nBlockTimeCount == 1) { nBlockTimeAverage = Diff; }
+                 else { nBlockTimeAverage = ((Diff - nBlockTimeAveragePrev) / nBlockTimeCount) + nBlockTimeAveragePrev; }
+                 nBlockTimeAveragePrev = nBlockTimeAverage;
+             }
+             nBlockTimeCount2++;
+             nBlockTimeSum2 += Diff;
+         }
+         LastBlockTime = BlockReading->GetBlockTime();
+
+         if (BlockReading->pprev == NULL) { assert(BlockReading); break; }
+         BlockReading = BlockReading->pprev;
+     }
+
+     CBigNum bnNew(PastDifficultyAverage);
+     if (nBlockTimeCount != 0 && nBlockTimeCount2 != 0) {
+             double SmartAverage = (((nBlockTimeAverage)*0.7)+((nBlockTimeSum2 / nBlockTimeCount2)*0.3));
+             if(SmartAverage < 1) SmartAverage = 1;
+             double Shift = nTargetSpacing/SmartAverage;
+
+             int64 nActualTimespan = (CountBlocks*nTargetSpacing)/Shift;
+             int64 nTargetTimespan = (CountBlocks*nTargetSpacing);
+             if (nActualTimespan < nTargetTimespan/3)
+                 nActualTimespan = nTargetTimespan/3;
+             if (nActualTimespan > nTargetTimespan*3)
+                 nActualTimespan = nTargetTimespan*3;
+
+             // Retarget
+             bnNew *= nActualTimespan;
+             bnNew /= nTargetTimespan;
+     }
+
+     if (bnNew > bnProofOfWorkLimit){
+         bnNew = bnProofOfWorkLimit;
+     }
+
+     return bnNew.GetCompact();
+ }
+
  // Using KGW
  unsigned int static GetNextWorkRequired_new(const CBlockIndex* pindexLast, const CBlockHeader *pblock)
  {
@@ -1334,17 +1426,29 @@ unsigned int static GetNextWorkRequired_legacy(const CBlockIndex* pindexLast, co
  
  unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock)
  {
-         int DiffMode = 1; // legacy diff-mode
-         if (fTestNet) {
-            if (pindexLast->nHeight+1 >= 100) { DiffMode = 2; }
-         }
-         else {         
-            if (pindexLast->nHeight+1 >= KIMOTO) { DiffMode = 2; }
-         }
-         
-         if             (DiffMode == 1) { return GetNextWorkRequired_legacy(pindexLast, pblock); } //legacy diff mode
-         else if        (DiffMode == 2) { return GetNextWorkRequired_new(pindexLast, pblock); } // KGW
-         return GetNextWorkRequired_new(pindexLast, pblock); // KGW
+     int DiffMode = 1; // legacy diff-mode
+
+     if (fTestNet)
+     {
+        if (pindexLast->nHeight+1 >= 50)
+        {
+            DiffMode = 3;
+        }
+     }
+     else {
+        if (pindexLast->nHeight+1 >= KIMOTO && pindexLast->nHeight+1 < DGW)
+        {
+            DiffMode = 2;
+        }
+        else if (pindexLast->nHeight+1 >= DGW)
+        {
+            DiffMode = 3;
+        }
+     }
+     if             (DiffMode == 1) { return GetNextWorkRequired_legacy(pindexLast, pblock); } //legacy diff mode
+     else if        (DiffMode == 2) { return GetNextWorkRequired_new(pindexLast, pblock); } // KGW
+     else if        (DiffMode == 3) { return DarkGravityWave(pindexLast, pblock); } // DGW
+     return DarkGravityWave(pindexLast, pblock); // DGW
  }
  
  

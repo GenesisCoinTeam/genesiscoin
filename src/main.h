@@ -24,7 +24,8 @@ class CInv;
 class CNode;
 
 struct CBlockIndexWorkComparator;
-
+#define FIRST_VER 0
+#define SECOND_VER 1
 /** The maximum allowed size for a serialized block, in bytes (network rule) */
 static const unsigned int MAX_BLOCK_SIZE = 1000000;                      // 1000KB block hard limit
 /** Obsolete: maximum size for mined blocks */
@@ -53,6 +54,7 @@ static const unsigned int MEMPOOL_HEIGHT = 0x7FFFFFFF;
 static const int64 DUST_SOFT_LIMIT = 100000; // 0.001 GNS
 /** Dust Hard Limit, ignored as wallet inputs (mininput default) */
 static const int64 DUST_HARD_LIMIT = 1000;   // 0.00001 GNS mininput
+
 static const int64 COINPERBLOCK = 20000;
 /** Number of block to retarget*/
 static const int TORETARGET = 40;
@@ -62,11 +64,20 @@ static const int BLOCKTIME = 60;
 static const int HEIGHDECREASE = 86400;
 /** Start Kimoto*/
 static const int KIMOTO = 1440;
-/** Coinbase transaction outputs can only be spent after this number of new blocks (network rule) */
-static const int COINBASE_MATURITY = 120;
 /** No amount larger than this (in satoshi) is valid */
 static const int64 MAX_MONEY = 30000000000 * COIN;
-inline bool MoneyRange(int64 nValue) { return (nValue >= 0 && nValue <= MAX_MONEY); }
+
+static const int64 COINPERBLOCK_2 = 30000;
+/**Number of block to decrease */
+static const int HEIGHDECREASE_2 = 10080;
+/** Start DGW*/
+static const int DGW = 15000;
+/** No amount larger than this (in satoshi) is valid */
+static const int64 MAX_MONEY_2 = 7500000000 * COIN;
+
+/** Coinbase transaction outputs can only be spent after this number of new blocks (network rule) */
+static const int COINBASE_MATURITY = 120;
+inline bool MoneyRange(int64 nValue) { return (nValue >= 0 && nValue <= MAX_MONEY_2); }
 /** Threshold for nLockTime: below this value it is interpreted as block number, otherwise as UNIX timestamp. */
 static const unsigned int LOCKTIME_THRESHOLD = 500000000; // Tue Nov  5 00:53:20 1985 UTC
 /** Maximum number of script-checking threads allowed */
