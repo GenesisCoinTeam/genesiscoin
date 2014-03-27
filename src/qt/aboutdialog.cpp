@@ -106,6 +106,9 @@ void AboutDialog::downloadFinish()
     ui->btnCheck->setEnabled(true);
     ui->btnCheck->setText("Check");
     ui->lblProcess->setText("Finished");
+    QMessageBox msgBox;
+    msgBox.setText("The new wallet was downloaded to your wallet folder. Reason: " + gui->getUpdatReason());
+    msgBox.exec();
     downloading = 0;
 }
 
